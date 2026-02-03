@@ -4,14 +4,36 @@ import joblib
 import uvicorn
 import numpy as np
 import mediapipe as mp
-import gc  # Garbage Collector untuk pembersihan memori
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import gc
+import time 
+import warnings
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Serona AI API")
 
 # ==========================================
-# 1. LOAD MODEL & ARTIFACTS
+# 0. SILENCE WARNINGS (Clean Logs for Azure)
+# ==========================================
+# This will hide Inconsistent Version Warning dan Scaler Feature Names Warning
+warnings.filterwarnings("ignore", category=UserWarning)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
+# ==========================================
+# 1. SECURITY: CORS CONFIGURATION
+# ==========================================
+# Allows your Android app and potential web dashboards to communicate safely.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, you could replace "*" with specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ==========================================
+# 2. LOAD MODEL & ARTIFACTS
 # ==========================================
 script_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(script_dir, '../models/final_model.pkl')
@@ -38,27 +60,29 @@ face_mesh = mp_face_mesh.FaceMesh(
 )
 
 # ==========================================
-# 2. HELPER FUNCTIONS
+# 3. HELPER FUNCTIONS
 # ==========================================
+
 def extract_features_optimized(landmarks, w, h):
+    """
+    Objective: Extract geometric facial features from landmarks and prepare input for the ML model.
+    Parameter: landmarks (MediaPipe landmarks), w (image width), h (image height).
+    Return: Reshaped numpy array of extracted features or None if calculation fails.
+    """
     coords = np.array([(p.x * w, p.y * h) for p in landmarks], dtype=np.float32)
 
     def dist(idx1, idx2):
         return np.linalg.norm(coords[idx1] - coords[idx2])
 
     def angle(idx1, idx2, idx3):
-        a = dist(idx2, idx3)
-        b = dist(idx1, idx2)
-        c = dist(idx1, idx3)
+        a, b, c = dist(idx2, idx3), dist(idx1, idx2), dist(idx1, idx3)
         if a * b == 0: return 0.0
         val = (a**2 + b**2 - c**2) / (2 * a * b)
         return np.degrees(np.arccos(np.clip(val, -1.0, 1.0)))
 
     try:
-        face_length = dist(10, 152)
-        face_width = dist(234, 454)
-        jaw_width = dist(58, 288)
-        chin_width = dist(172, 397)
+        face_length, face_width = dist(10, 152), dist(234, 454)
+        jaw_width, chin_width = dist(58, 288), dist(172, 397)
         forehead_width = dist(103, 332)
 
         face_oval_indices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 
@@ -66,10 +90,9 @@ def extract_features_optimized(landmarks, w, h):
                              172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
         oval_points = coords[face_oval_indices].astype(np.int32)
         
-        area = cv2.contourArea(oval_points)
-        perimeter = cv2.arcLength(oval_points, True)
+        area, perimeter = cv2.contourArea(oval_points), cv2.arcLength(oval_points, True)
         hull = cv2.convexHull(oval_points)
-        x, y, wr, hr = cv2.boundingRect(oval_points)
+        _, _, wr, hr = cv2.boundingRect(oval_points)
         
         raw_feats = {
             'circularity': (4 * np.pi * area) / (perimeter ** 2) if perimeter > 0 else 0,
@@ -88,6 +111,11 @@ def extract_features_optimized(landmarks, w, h):
         return None
 
 def analyze_skintone(image, landmarks, w, h):
+    """
+    Objective: Detect skin tone category by analyzing specific cheek ROIs in the LAB color space.
+    Parameter: image (BGR numpy array), landmarks (MediaPipe landmarks), w (width), h (height).
+    Return: String representation of skintone (Fair Light, Medium Tan, or Dark).
+    """
     rois = [[330, 347, 346, 352], [101, 118, 117, 123]]
     mean_colors = []
     for roi in rois:
@@ -105,33 +133,52 @@ def analyze_skintone(image, landmarks, w, h):
     elif L > 105: return "Medium Tan"
     else: return "Dark"
 
+# ==========================================
+# 4. ENDPOINTS
+# ==========================================
+
 @app.get("/")
 def home():
-    return {"message": "Serona AI Server is Online", "region": "Localhost"}
+    """
+    Objective: Health check endpoint to verify server status.
+    Parameter: None.
+    Return: JSON indicating server is online.
+    """
+    return {"status": "online", "service": "Serona AI", "location": "Cloud"}
 
 @app.post("/predict")
 async def predict_face(file: UploadFile = File(...)):
+    """
+    Objective: Process uploaded image to predict face shape and skintone.
+    Parameter: file (UploadFile).
+    Return: JSON containing status, predicted shape with probability, skintone, and server inference time.
+    """
+    # Simple validation: ensure it's an image
+    if not file.content_type.startswith("image/"):
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid file type"})
+
     img = None
     try:
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        if img is None:
-            raise ValueError("Could not decode image")
+        if img is None: raise ValueError("Could not decode image")
             
         h, w, _ = img.shape
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb_img)
 
         if not results.multi_face_landmarks:
-            return JSONResponse(status_code=200, content={"status": "failed", "message": "No face detected"})
+            return {"status": "failed", "message": "No face detected"}
 
         landmarks = results.multi_face_landmarks[0].landmark
         X_raw = extract_features_optimized(landmarks, w, h)
         
-        if X_raw is None:
-            return {"status": "failed", "message": "Alignment error"}
+        if X_raw is None: return {"status": "failed", "message": "Alignment error"}
+
+        # --- PURE ML INFERENCE START ---
+        t_start = time.perf_counter()
 
         X_poly = poly.transform(X_raw)
         X_scaled = scaler.transform(X_poly)
@@ -139,23 +186,33 @@ async def predict_face(file: UploadFile = File(...)):
         
         pred_idx = model.predict(X_sel)[0]
         prob = np.max(model.predict_proba(X_sel))
+
+        t_end = time.perf_counter()
+        # --- PURE ML INFERENCE END ---
+
+        inference_ms = (t_end - t_start) * 1000
+        print(f"[PERFORMANCE]: Pure ML Inference Time: {inference_ms:.2f} ms")
+
         final_shape = class_names[pred_idx]
         final_tone = analyze_skintone(img, landmarks, w, h)
 
         return {
             "status": "success",
             "shape": f"{final_shape} ({prob*100:.0f}%)",
-            "skintone": final_tone
+            "skintone": final_tone,
+            "server_inference_ms": str(round(inference_ms, 2))
         }
 
     except Exception as e:
         return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
     
     finally:
-        if img is not None:
-            del img # Hapus gambar dari memori
+        if img is not None: del img
         await file.close()
-        gc.collect() # Paksa pembersihan RAM
+        gc.collect()
 
+# so that we can run via: python api.py (test locally)
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Azure usually manages ports automatically, but uvicorn needs a port to bind
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
