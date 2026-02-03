@@ -22,4 +22,5 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # 5. Jalankan Gunicorn
-CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:${PORT:-8000}", "machine_learning_final.scripts.api:app"]
+# CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "machine_learning_final.scripts.api:app"]
+CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} machine_learning_final.scripts.api:app"]
