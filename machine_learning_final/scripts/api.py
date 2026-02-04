@@ -131,7 +131,7 @@ def analyze_skintone(image, landmarks, w, h):
     
     if L > 165: return "Fair Light"
     elif L > 105: return "Medium Tan"
-    else: return "Dark"
+    else: return "Deep"
 
 # ==========================================
 # 4. ENDPOINTS
