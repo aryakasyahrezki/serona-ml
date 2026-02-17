@@ -449,15 +449,7 @@ Serona is a full-stack system across 3 repositories:
 
 ### System Architecture
 
-```
-┌─────────────────┐          ┌─────────────────┐         ┌─────────────────┐
-│ serona-android  │  image   │   serona-ml     │  shape  │ serona-backend  │
-│  (Android App)  │ ───────▶│   (ML API on    │────────▶│  (Recommend     │
-│                 │◀─────── │    Azure)       │          │   Articles     │
-│  Live Scanning  │ result   │   FastAPI +     │         │  Database +     │
-│  + UI           │          │   MediaPipe     │         │  Content API    │
-└─────────────────┘          └─────────────────┘         └─────────────────┘
-```
+![System Architecture](assets/architecture.png)
 
 ---
 
