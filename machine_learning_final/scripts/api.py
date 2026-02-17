@@ -221,6 +221,17 @@ def analyze_skintone(image, landmarks, w, h):
 
     except Exception:
         return "Unknown"
+    
+def predict_face(X_input):
+    """
+    Objective: Run ML pipeline inference on prepared feature DataFrame
+    Parameter: X_input - pandas DataFrame with correct feature order
+    Return: tuple (predicted_class_name, confidence_score)
+    """
+    pred_idx = pipeline.predict(X_input)[0]
+    prob = float(np.max(pipeline.predict_proba(X_input)))
+    final_shape = class_names[pred_idx]
+    return final_shape, prob
 
 # ==========================================
 # 4. ENDPOINTS
@@ -237,7 +248,7 @@ def home():
 
 
 @app.post("/predict")
-async def predict_face(file: UploadFile = File(...)):
+async def predict_endpoint(file: UploadFile = File(...)):
     """
     Objective: Predict face shape and skin tone from uploaded image
     Parameter: file - UploadFile containing face image
@@ -299,12 +310,9 @@ async def predict_face(file: UploadFile = File(...)):
 
         # ===== TIMING CHECKPOINT 5: ML Inference =====
         t_start = time.perf_counter()
-        pred_idx = pipeline.predict(X_input)[0]
-        prob = np.max(pipeline.predict_proba(X_input))
+        final_shape, prob = predict_face(X_input)
         t_end = time.perf_counter()
         inference_ms = (t_end - t_start) * 1000
-
-        final_shape = class_names[pred_idx]
 
         # ===== TIMING CHECKPOINT 6: Skintone Analysis =====
         t9 = time.perf_counter()

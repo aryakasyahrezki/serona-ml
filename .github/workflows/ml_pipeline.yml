@@ -252,7 +252,7 @@ jobs:
               source = f.read()
 
           tree      = ast.parse(source)
-          functions = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+          functions = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
           required  = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
 
           all_ok = True
