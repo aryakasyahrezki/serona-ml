@@ -449,7 +449,9 @@ Serona is a full-stack system across 3 repositories:
 
 ### System Architecture
 
-![System Architecture](assets/architecture.png)
+| System Architecture Illustration |
+|:---:|
+| ![System Architecture](assets/architecture.png) |
 
 ---
 
