@@ -15,7 +15,7 @@
 **Serona** is a mobile Android app that helps users discover makeup styles suited to their face. Users open the app and the camera begins **live scanning in real-time**, the model continuously analyzes the face and updates the prediction automatically. Once the user click the see result button, it shows the face shape and skin tone analysis, then recommends personalized makeup tutorial articles.
 
 1. **Live face shape scanning** — continuous real-time detection using this ML model (Heart, Oblong, Oval, Round, Square)
-2. **Skin tone detection** — color analysis on cheek regions (Fair Light, Medium Tan, Deep)
+2. **Skin tone detection** — color analysis on certain face regions (Fair Light, Medium Tan, Deep)
 3. **Personalized recommendations** — step-by-step WikiHow-style makeup tutorial articles tailored to the user's face shape and skin tone
 
 ---
