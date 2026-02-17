@@ -9,7 +9,6 @@ Run with:
 """
 
 import os
-import sys
 import pytest
 import joblib
 import numpy as np
@@ -19,15 +18,15 @@ import pandas as pd
 # CONFIGURATION
 # ==========================================
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '../models/model.pkl')
-API_PATH   = os.path.join(os.path.dirname(__file__), '../scripts/api.py')
+API_PATH = os.path.join(os.path.dirname(__file__), '../scripts/api.py')
 
-EXPECTED_CLASSES  = ['Heart', 'Oblong', 'Oval', 'Round', 'Square']
+EXPECTED_CLASSES = ['Heart', 'Oblong', 'Oval', 'Round', 'Square']
 EXPECTED_FEATURES = [
     'ratio_len_width', 'ratio_jaw_cheek', 'ratio_forehead_jaw',
     'avg_jaw_angle', 'ratio_chin_jaw', 'circularity', 'solidity', 'extent'
 ]
-MIN_CV_ACCURACY   = 0.65
-EXPECTED_SEED     = 47
+MIN_CV_ACCURACY = 0.65
+EXPECTED_SEED = 47
 
 # ==========================================
 # FIXTURES
@@ -39,33 +38,37 @@ def artifact():
     assert os.path.exists(MODEL_PATH), f"model.pkl not found at {MODEL_PATH}"
     return joblib.load(MODEL_PATH)
 
+
 @pytest.fixture(scope='module')
 def pipeline(artifact):
     """Return the sklearn pipeline."""
     return artifact['pipeline']
+
 
 @pytest.fixture(scope='module')
 def label_encoder(artifact):
     """Return the label encoder."""
     return artifact['label_encoder']
 
+
 @pytest.fixture(scope='module')
 def feature_names(artifact):
     """Return list of feature names."""
     return artifact['feature_names']
 
+
 @pytest.fixture(scope='module')
 def dummy_sample(feature_names):
     """Return a realistic dummy input sample as DataFrame."""
     return pd.DataFrame([{
-        'ratio_len_width'   : 1.18,
-        'ratio_jaw_cheek'   : 0.88,
+        'ratio_len_width': 1.18,
+        'ratio_jaw_cheek': 0.88,
         'ratio_forehead_jaw': 0.85,
-        'avg_jaw_angle'     : 145.0,
-        'ratio_chin_jaw'    : 0.88,
-        'circularity'       : 0.95,
-        'solidity'          : 0.999,
-        'extent'            : 0.79
+        'avg_jaw_angle': 145.0,
+        'ratio_chin_jaw': 0.88,
+        'circularity': 0.95,
+        'solidity': 0.999,
+        'extent': 0.79
     }], columns=feature_names)
 
 # ==========================================
@@ -118,7 +121,7 @@ class TestModelStructure:
     def test_pipeline_has_correct_steps(self, pipeline):
         """Pipeline must contain poly, scaler, and rfecv steps."""
         step_names = [name for name, _ in pipeline.steps]
-        assert 'poly'  in step_names, "Pipeline missing 'poly' step"
+        assert 'poly' in step_names, "Pipeline missing 'poly' step"
         assert 'scaler' in step_names, "Pipeline missing 'scaler' step"
         assert 'rfecv' in step_names, "Pipeline missing 'rfecv' step"
 
