@@ -443,9 +443,9 @@ Serona is a full-stack system across 3 repositories:
 
 | Repository | Description | Link |
 |------------|-------------|------|
-| **serona-ml** | ML model, FastAPI, testing, CI/CD ← *you are here* | [serona-ml](https://github.com/aryakasyahrezki/serona-ml) |
-| **serona-backend** | Backend server, database, business logic, article content | *(add link)* |
-| **serona-android** | Android mobile app (Kotlin), UI, camera integration | *(add link)* |
+| **serona-ml** | ML model, FastAPI, testing, CI/CD ← *you are here* | [serona-ml](https://github.com/aryakasyahrezki/serona-ml) | 
+| **serona-backend** | Backend server, database, business logic, article content | [serona-backend](https://github.com/aryakasyahrezki/serona-backend) |
+| **serona-android** | Android mobile app (Kotlin), UI, camera integration | [serona-android](https://github.com/aryakasyahrezki/serona-android) |
 
 ### System Architecture
 
