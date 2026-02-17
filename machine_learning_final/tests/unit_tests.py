@@ -147,7 +147,7 @@ class TestInference:
     def test_predict_returns_valid_class(self, pipeline, label_encoder, dummy_sample):
         """Prediction must return a valid face shape class."""
         pred_idx = pipeline.predict(dummy_sample)[0]
-        shape    = label_encoder.classes_[pred_idx]
+        shape = label_encoder.classes_[pred_idx]
         assert shape in EXPECTED_CLASSES, \
             f"Prediction '{shape}' is not a valid class"
 
@@ -171,7 +171,7 @@ class TestInference:
 
     def test_confidence_is_reasonable(self, pipeline, dummy_sample):
         """Confidence (max probability) must be between 0 and 1."""
-        proba      = pipeline.predict_proba(dummy_sample)[0]
+        proba = pipeline.predict_proba(dummy_sample)[0]
         confidence = np.max(proba)
         assert 0.0 <= confidence <= 1.0, \
             f"Confidence {confidence} is out of range [0, 1]"
@@ -179,14 +179,14 @@ class TestInference:
     def test_inference_accepts_dataframe(self, pipeline, feature_names):
         """Pipeline must accept pandas DataFrame input."""
         df = pd.DataFrame([{
-            'ratio_len_width'   : 1.20,
-            'ratio_jaw_cheek'   : 0.85,
+            'ratio_len_width': 1.20,
+            'ratio_jaw_cheek': 0.85,
             'ratio_forehead_jaw': 0.90,
-            'avg_jaw_angle'     : 140.0,
-            'ratio_chin_jaw'    : 0.85,
-            'circularity'       : 0.92,
-            'solidity'          : 0.998,
-            'extent'            : 0.78
+            'avg_jaw_angle': 140.0,
+            'ratio_chin_jaw': 0.85,
+            'circularity': 0.92,
+            'solidity': 0.998,
+            'extent': 0.78
         }], columns=feature_names)
 
         try:
@@ -228,18 +228,18 @@ class TestInputValidation:
     def test_boundary_ratios(self, pipeline, label_encoder, feature_names):
         """Model must handle boundary feature values without crashing."""
         boundary_sample = pd.DataFrame([{
-            'ratio_len_width'   : 0.5,
-            'ratio_jaw_cheek'   : 0.5,
+            'ratio_len_width': 0.5,
+            'ratio_jaw_cheek': 0.5,
             'ratio_forehead_jaw': 0.5,
-            'avg_jaw_angle'     : 90.0,
-            'ratio_chin_jaw'    : 0.5,
-            'circularity'       : 0.5,
-            'solidity'          : 0.9,
-            'extent'            : 0.5
+            'avg_jaw_angle': 90.0,
+            'ratio_chin_jaw': 0.5,
+            'circularity': 0.5,
+            'solidity': 0.9,
+            'extent': 0.5
         }], columns=feature_names)
 
         try:
-            pred  = pipeline.predict(boundary_sample)[0]
+            pred = pipeline.predict(boundary_sample)[0]
             shape = label_encoder.classes_[pred]
             assert shape in EXPECTED_CLASSES
         except Exception as e:
@@ -248,18 +248,18 @@ class TestInputValidation:
     def test_high_ratio_values(self, pipeline, label_encoder, feature_names):
         """Model must handle high feature values without crashing."""
         high_sample = pd.DataFrame([{
-            'ratio_len_width'   : 2.0,
-            'ratio_jaw_cheek'   : 1.2,
+            'ratio_len_width': 2.0,
+            'ratio_jaw_cheek': 1.2,
             'ratio_forehead_jaw': 1.5,
-            'avg_jaw_angle'     : 170.0,
-            'ratio_chin_jaw'    : 1.1,
-            'circularity'       : 1.0,
-            'solidity'          : 1.0,
-            'extent'            : 0.95
+            'avg_jaw_angle': 170.0,
+            'ratio_chin_jaw': 1.1,
+            'circularity': 1.0,
+            'solidity': 1.0,
+            'extent': 0.95
         }], columns=feature_names)
 
         try:
-            pred  = pipeline.predict(high_sample)[0]
+            pred = pipeline.predict(high_sample)[0]
             shape = label_encoder.classes_[pred]
             assert shape in EXPECTED_CLASSES
         except Exception as e:
@@ -292,9 +292,9 @@ class TestAPICode:
         with open(API_PATH, 'r') as f:
             source = f.read()
 
-        tree      = ast.parse(source)
+        tree = ast.parse(source)
         functions = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
-        required  = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
+        required = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
 
         for func in required:
             assert func in functions, \
