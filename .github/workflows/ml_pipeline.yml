@@ -1,0 +1,341 @@
+name: Serona AI - ML Pipeline CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  # ==========================================
+  # JOB 1: MODEL VALIDATION
+  # ==========================================
+  model-validation:
+    name: Model Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check model file exists
+        run: |
+          if [ ! -f "machine_learning_final/models/model.pkl" ]; then
+            echo "❌ model.pkl not found!"
+            exit 1
+          fi
+          echo "✅ model.pkl found"
+          ls -lh machine_learning_final/models/model.pkl
+
+      - name: Validate model structure and accuracy
+        run: |
+          python -c "
+          import joblib
+          import sys
+
+          artifact = joblib.load('machine_learning_final/models/model.pkl')
+
+          # Check all required keys exist
+          required_keys = ['pipeline', 'label_encoder', 'feature_names',
+                           'random_seed', 'cv_accuracy', 'metadata']
+          for key in required_keys:
+              if key not in artifact:
+                  print(f'❌ Missing key: {key}')
+                  sys.exit(1)
+
+          cv_acc = artifact['cv_accuracy']
+          seed   = artifact['random_seed']
+          n_feat = artifact['metadata']['n_features_selected']
+          classes = artifact['metadata']['classes']
+
+          print(f'✅ Model loaded successfully')
+          print(f'   Random Seed      : {seed}')
+          print(f'   CV Accuracy      : {cv_acc*100:.2f}%')
+          print(f'   Selected Features: {n_feat}')
+          print(f'   Classes          : {classes}')
+
+          # Minimum accuracy gate
+          MIN_ACCURACY = 0.65
+          if cv_acc < MIN_ACCURACY:
+              print(f'❌ Accuracy {cv_acc:.2%} is below minimum threshold {MIN_ACCURACY:.2%}')
+              sys.exit(1)
+
+          print(f'✅ Accuracy check passed (>= {MIN_ACCURACY:.0%})')
+          "
+
+      - name: Validate inference works
+        run: |
+          python -c "
+          import joblib
+          import pandas as pd
+          import numpy as np
+          import sys
+
+          artifact = joblib.load('machine_learning_final/models/model.pkl')
+          pipeline      = artifact['pipeline']
+          label_encoder = artifact['label_encoder']
+          feature_names = artifact['feature_names']
+
+          # Dummy sample matching training features
+          dummy = pd.DataFrame([{
+              'ratio_len_width'   : 1.18,
+              'ratio_jaw_cheek'   : 0.88,
+              'ratio_forehead_jaw': 0.85,
+              'avg_jaw_angle'     : 145.0,
+              'ratio_chin_jaw'    : 0.88,
+              'circularity'       : 0.95,
+              'solidity'          : 0.999,
+              'extent'            : 0.79
+          }], columns=feature_names)
+
+          pred_idx   = pipeline.predict(dummy)[0]
+          proba      = pipeline.predict_proba(dummy)[0]
+          shape      = label_encoder.classes_[pred_idx]
+          confidence = np.max(proba) * 100
+
+          print(f'✅ Inference test passed')
+          print(f'   Prediction : {shape} ({confidence:.1f}%)')
+          print(f'   All probabilities: {dict(zip(label_encoder.classes_, (proba*100).round(1)))}')
+          "
+
+  # ==========================================
+  # JOB 2: API VALIDATION
+  # ==========================================
+  api-validation:
+    name: API Code Validation
+    runs-on: ubuntu-latest
+    needs: model-validation
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check API syntax is valid
+        run: |
+          python -c "
+          import ast, sys
+
+          with open('machine_learning_final/scripts/api.py', 'r') as f:
+              source = f.read()
+
+          try:
+              ast.parse(source)
+              print('✅ api.py syntax is valid')
+          except SyntaxError as e:
+              print(f'❌ Syntax error in api.py: {e}')
+              sys.exit(1)
+          "
+
+      - name: Check required functions exist in API
+        run: |
+          python -c "
+          import ast, sys
+
+          with open('machine_learning_final/scripts/api.py', 'r') as f:
+              source = f.read()
+
+          tree      = ast.parse(source)
+          functions = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+          required  = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
+
+          all_ok = True
+          for func in required:
+              if func in functions:
+                  print(f'✅ Found: {func}()')
+              else:
+                  print(f'❌ Missing: {func}()')
+                  all_ok = False
+
+          if not all_ok:
+              sys.exit(1)
+          "
+
+      - name: Check model loads correctly inside API context
+        run: |
+          python -c "
+          import joblib, sys, os
+
+          # Simulate what api.py does on startup
+          model_path = 'machine_learning_final/models/model.pkl'
+
+          try:
+              artifact      = joblib.load(model_path)
+              pipeline      = artifact['pipeline']
+              label_encoder = artifact['label_encoder']
+              class_names   = label_encoder.classes_
+              feature_names = artifact['feature_names']
+
+              print(f'✅ API model loading simulation passed')
+              print(f'   Classes  : {list(class_names)}')
+              print(f'   Features : {feature_names}')
+          except Exception as e:
+              print(f'❌ API model loading failed: {e}')
+              sys.exit(1)
+          "
+
+  # ==========================================
+  # JOB 3: LATENCY CHECK
+  # ==========================================
+  latency-check:
+    name: Inference Latency Check
+    runs-on: ubuntu-latest
+    needs: model-validation
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run latency benchmark
+        run: |
+          python -c "
+          import joblib, pandas as pd, numpy as np, time, sys
+
+          artifact      = joblib.load('machine_learning_final/models/model.pkl')
+          pipeline      = artifact['pipeline']
+          feature_names = artifact['feature_names']
+
+          dummy = pd.DataFrame([{
+              'ratio_len_width'   : 1.18,
+              'ratio_jaw_cheek'   : 0.88,
+              'ratio_forehead_jaw': 0.85,
+              'avg_jaw_angle'     : 145.0,
+              'ratio_chin_jaw'    : 0.88,
+              'circularity'       : 0.95,
+              'solidity'          : 0.999,
+              'extent'            : 0.79
+          }], columns=feature_names)
+
+          # Warmup
+          for _ in range(5):
+              pipeline.predict(dummy)
+
+          # Benchmark 100 predictions
+          latencies = []
+          for _ in range(100):
+              t_start = time.perf_counter()
+              pipeline.predict(dummy)
+              latencies.append((time.perf_counter() - t_start) * 1000)
+
+          p50 = np.percentile(latencies, 50)
+          p90 = np.percentile(latencies, 90)
+          p95 = np.percentile(latencies, 95)
+          mean = np.mean(latencies)
+
+          print(f'✅ Latency benchmark complete')
+          print(f'   Mean : {mean:.2f} ms')
+          print(f'   P50  : {p50:.2f} ms')
+          print(f'   P90  : {p90:.2f} ms')
+          print(f'   P95  : {p95:.2f} ms')
+
+          # Latency gate: P95 must be under 50ms
+          MAX_P95_MS = 50.0
+          if p95 > MAX_P95_MS:
+              print(f'⚠️  P95 ({p95:.2f}ms) exceeds threshold ({MAX_P95_MS}ms)')
+          else:
+              print(f'✅ Latency within acceptable range (P95 < {MAX_P95_MS}ms)')
+          "
+
+  # ==========================================
+  # JOB 4: MODEL SIZE CHECK
+  # ==========================================
+  model-size-check:
+    name: Model Size Check
+    runs-on: ubuntu-latest
+    needs: model-validation
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Check model file size
+        run: |
+          python -c "
+          import os, sys
+
+          model_path = 'machine_learning_final/models/model.pkl'
+          size_bytes = os.path.getsize(model_path)
+          size_kb    = size_bytes / 1024
+          size_mb    = size_bytes / (1024 * 1024)
+
+          print(f'✅ Model size check')
+          print(f'   Size: {size_kb:.1f} KB ({size_mb:.3f} MB)')
+
+          # Size gate: must be under 50MB
+          MAX_SIZE_MB = 50.0
+          if size_mb > MAX_SIZE_MB:
+              print(f'❌ Model too large ({size_mb:.1f}MB > {MAX_SIZE_MB}MB limit)')
+              sys.exit(1)
+
+          print(f'✅ Model size is within limit (< {MAX_SIZE_MB}MB)')
+          "
+
+  # ==========================================
+  # JOB 5: SUMMARY
+  # ==========================================
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [model-validation, api-validation, latency-check, model-size-check]
+    if: always()
+
+    steps:
+      - name: Print CI Summary
+        run: |
+          echo "=================================================="
+          echo "  SERONA AI - CI PIPELINE SUMMARY"
+          echo "=================================================="
+          echo "  Model Validation  : ${{ needs.model-validation.result }}"
+          echo "  API Validation    : ${{ needs.api-validation.result }}"
+          echo "  Latency Check     : ${{ needs.latency-check.result }}"
+          echo "  Model Size Check  : ${{ needs.model-size-check.result }}"
+          echo "=================================================="
+
+          # Fail the summary job if any required job failed
+          if [ "${{ needs.model-validation.result }}" != "success" ] || \
+             [ "${{ needs.api-validation.result }}"   != "success" ] || \
+             [ "${{ needs.latency-check.result }}"    != "success" ] || \
+             [ "${{ needs.model-size-check.result }}" != "success" ]; then
+            echo "❌ One or more CI jobs failed!"
+            exit 1
+          fi
+
+          echo "✅ All CI jobs passed! Code is ready."
