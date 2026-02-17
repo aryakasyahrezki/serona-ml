@@ -150,7 +150,7 @@ serona-ml/
 │
 ├── .github/
 │   └── workflows/
-│       └── ml_pipeline.yml         # CI/CD — GitHub Actions (6 jobs)
+│       └── ml_pipeline.yml         # CI/CD — GitHub Actions (7 jobs)
 │
 ├── assets/                         # Screenshots for README
 │   ├── ss_camera.png
@@ -450,13 +450,13 @@ Serona is a full-stack system across 3 repositories:
 ### System Architecture
 
 ```
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│  serona-android │  image  │   serona-ml     │  shape  │ serona-backend  │
-│   (Android App) │ ───────▶│  (ML API on     │────────▶│  (Recommend     │
-│                 │◀────────│   Azure)        │         │   Articles)     │
-│  Live Scanning  │ result  │  FastAPI +      │         │  Database +     │
-│  + UI           │         │  MediaPipe      │         │  Content API    │
-└─────────────────┘         └─────────────────┘         └─────────────────┘
+┌─────────────────┐          ┌─────────────────┐         ┌─────────────────┐
+│ serona-android  │  image   │   serona-ml     │  shape  │ serona-backend  │
+│  (Android App)  │ ───────▶│   (ML API on    │────────▶│  (Recommend     │
+│                 │◀─────── │    Azure)       │          │   Articles     │
+│  Live Scanning  │ result   │   FastAPI +     │         │  Database +     │
+│  + UI           │          │   MediaPipe     │         │  Content API    │
+└─────────────────┘          └─────────────────┘         └─────────────────┘
 ```
 
 ---
