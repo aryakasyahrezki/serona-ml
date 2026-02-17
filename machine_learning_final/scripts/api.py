@@ -325,7 +325,7 @@ async def predict_face(file: UploadFile = File(...)):
         print(f"  4. Feature Extract  : {feature_extraction_ms:6.2f} ms ({feature_extraction_ms / total_request_ms * 100:5.1f}%)")
         print(f"  5. ML Inference     : {inference_ms:6.2f} ms ({inference_ms / total_request_ms * 100:5.1f}%)")
         print(f"  6. Skintone Analysis: {skintone_ms:6.2f} ms ({skintone_ms / total_request_ms * 100:5.1f}%)")
-        print(f"  " + "-" * 56)
+        print("  " + "-" * 56)
         print(f"  TOTAL REQUEST TIME  : {total_request_ms:6.2f} ms")
         print(f"  Result              : {final_shape} ({prob * 100:.0f}%)")
         print("=" * 60)
@@ -333,7 +333,7 @@ async def predict_face(file: UploadFile = File(...)):
         # ✅ RETURN with timing info
         return {
             "status": "success",
-            "shape": f"{final_shape} ({prob * 100:.0f}%)",
+            "shape": f"{final_shape} ({prob * 100:.0f}%)",  
             "skintone": final_tone,
             "server_inference_ms": str(round(inference_ms, 2)),
             "total_request_ms": str(round(total_request_ms, 2)),
