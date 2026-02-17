@@ -431,3 +431,28 @@ jobs:
           fi
 
           echo "✅ All CI jobs passed! Code is ready."
+
+  # ==========================================
+  # JOB 6: DEPLOY TO AZURE
+  # ==========================================
+  deploy:
+    name: Deploy to Azure
+    needs: ci-summary
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/serona-ml-image:latest .
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/serona-ml-image:latest
