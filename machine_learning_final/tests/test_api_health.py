@@ -2,15 +2,15 @@ import requests
 import time
 import os
 
-# Configuration
+# API Endpoint and Sample Data Configuration
 API_URL = "http://localhost:8000/predict"
-TEST_IMAGE = "../data/raw_data_30s_cropped/Oval/1.jpg"  # Adjust path if needed
+TEST_IMAGE = "../data/raw_data_30s_cropped/Oval/1.jpg"  # Verify path integrity before execution
 
 print("="*60)
 print("TESTING API SPEED - FILE PRELOADING TEST")
 print("="*60)
 
-# Check if file exists
+# Validate source file availability
 if not os.path.exists(TEST_IMAGE):
     print(f"❌ Image not found: {TEST_IMAGE}")
     print("Please update TEST_IMAGE path in the script")
@@ -20,7 +20,7 @@ print(f"Test image: {TEST_IMAGE}")
 print(f"API URL: {API_URL}")
 print()
 
-# ===== PRE-LOAD FILE INTO MEMORY =====
+# ===== PRE-FETCH RESOURCE TO VOLATILE MEMORY =====
 print("Loading image into memory...")
 with open(TEST_IMAGE, 'rb') as f:
     file_content = f.read()  # Read entire file into RAM
@@ -29,7 +29,7 @@ file_size_kb = len(file_content) / 1024
 print(f"✅ Image loaded: {file_size_kb:.1f} KB")
 print()
 
-# Test 5 times
+# Execution of 5-iteration stress test
 print("Running 5 test requests (file pre-loaded in memory)...")
 print("-"*60)
 

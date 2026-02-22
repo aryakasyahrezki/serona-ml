@@ -11,11 +11,10 @@ from pathlib import Path
 import sys
 
 # ==========================================
-# CONFIGURATION
+# SYSTEM & ENVIRONMENT CONFIGURATION
 # ==========================================
-API_URL = "http://localhost:8000/predict"  # Local test
-TEST_IMAGES_DIR = "../data/raw_data_30s_cropped"  # Adjust path if needed
-
+API_URL = "http://localhost:8000/predict" # Local deployment endpoint
+TEST_IMAGES_DIR = "../data/raw_data_30s_cropped"  # Root directory for validation dataset
 print("="*60)
 print("END-TO-END API LATENCY BENCHMARK")
 print("="*60)
@@ -51,7 +50,7 @@ if len(test_images) == 0:
 print(f"\n✅ Total test images: {len(test_images)}")
 
 # ==========================================
-# WARM UP
+# API COLD-START MITIGATION (WARM-UP)
 # ==========================================
 print("\n" + "="*60)
 print("WARMING UP API...")
@@ -72,7 +71,7 @@ except Exception as e:
     sys.exit(1)
 
 # ==========================================
-# BENCHMARK
+# BENCHMARK EXECUTION PHASE
 # ==========================================
 print("\n" + "="*60)
 print(f"RUNNING BENCHMARK ({len(test_images)} predictions)...")
@@ -207,8 +206,8 @@ print(f"  Other Processing:    ~{overhead.mean():.0f} ms ({overhead.mean()/laten
 print(f"  Total:               ~{latencies_client.mean():.0f} ms (100%)")
 
 # ==========================================
-# VISUALIZATIONS
-# ==========================================
+# PERFORMANCE DATA VISUALIZATION
+# =========================================
 print("\n" + "="*60)
 print("GENERATING VISUALIZATIONS...")
 print("="*60)
