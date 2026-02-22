@@ -1,6 +1,6 @@
 """
-End-to-End API Latency Benchmark
-Tests complete request cycle: upload → process → predict → respond
+Comprehensive API Latency Evaluation
+Measures full request lifecycle: upload → processing → prediction → response
 """
 
 import requests
@@ -11,10 +11,10 @@ from pathlib import Path
 import sys
 
 # ==========================================
-# SYSTEM & ENVIRONMENT CONFIGURATION
+# ENVIRONMENT & SYSTEM SETTINGS
 # ==========================================
-API_URL = "http://localhost:8000/predict" # Local deployment endpoint
-TEST_IMAGES_DIR = "../data/raw_data_30s_cropped"  # Root directory for validation dataset
+API_URL = "http://localhost:8000/predict" # Endpoint for locally deployed API
+TEST_IMAGES_DIR = "../data/raw_data_30s_cropped"  # Base directory containing validation images
 print("="*60)
 print("END-TO-END API LATENCY BENCHMARK")
 print("="*60)
@@ -23,7 +23,7 @@ print(f"Test images: {TEST_IMAGES_DIR}")
 print("="*60)
 
 # ==========================================
-# COLLECT TEST IMAGES
+# GATHER TEST IMAGE FILES
 # ==========================================
 test_images = []
 labels = []
@@ -36,7 +36,7 @@ for shape in ['Heart', 'Oblong', 'Oval', 'Round', 'Square']:
         continue
     
     images = list(folder.glob("*.jpg")) + list(folder.glob("*.png"))
-    # Take 5 images per class (25 total)
+    # Limit to 5 images per category (total expected: 25)
     images = images[:5]
     
     test_images.extend(images)
@@ -50,7 +50,7 @@ if len(test_images) == 0:
 print(f"\n✅ Total test images: {len(test_images)}")
 
 # ==========================================
-# API COLD-START MITIGATION (WARM-UP)
+# PREVENT COLD START DELAY (INITIAL REQUEST)
 # ==========================================
 print("\n" + "="*60)
 print("WARMING UP API...")
@@ -71,7 +71,7 @@ except Exception as e:
     sys.exit(1)
 
 # ==========================================
-# BENCHMARK EXECUTION PHASE
+# RUN PERFORMANCE TEST
 # ==========================================
 print("\n" + "="*60)
 print(f"RUNNING BENCHMARK ({len(test_images)} predictions)...")
@@ -86,7 +86,7 @@ predictions = []
 for idx, (img_path, true_label) in enumerate(zip(test_images, labels)):
     try:
         with open(img_path, 'rb') as f:
-            # Measure client-side latency (total request time)
+            # Record total client-side request duration
             t_start = time.perf_counter()
             response = requests.post(
                 API_URL, 
@@ -95,7 +95,7 @@ for idx, (img_path, true_label) in enumerate(zip(test_images, labels)):
             )
             t_end = time.perf_counter()
             
-            client_latency = (t_end - t_start) * 1000  # Convert to ms
+            client_latency = (t_end - t_start) * 1000  # Convert seconds to milliseconds
             
             if response.status_code == 200:
                 data = response.json()
@@ -103,11 +103,11 @@ for idx, (img_path, true_label) in enumerate(zip(test_images, labels)):
                 if data.get('status') == 'success':
                     latencies_client.append(client_latency)
                     
-                    # Extract server-side ML inference time
+                    # Retrieve pure server-side inference duration
                     server_time = float(data.get('server_inference_ms', 0))
                     latencies_server.append(server_time)
                     
-                    # Extract prediction
+                    # Store prediction details
                     shape_pred = data.get('shape', '')
                     predictions.append({
                         'true': true_label,
@@ -124,7 +124,7 @@ for idx, (img_path, true_label) in enumerate(zip(test_images, labels)):
                 failed += 1
                 print(f"  ⚠️  HTTP {response.status_code}: {img_path.name}")
         
-        # Progress indicator
+        # Show progress every 5 images processed
         if (idx + 1) % 5 == 0:
             print(f"  Progress: {idx + 1}/{len(test_images)} ({successful} successful)")
             
@@ -136,7 +136,7 @@ for idx, (img_path, true_label) in enumerate(zip(test_images, labels)):
         print(f"  ❌ Error on {img_path.name}: {e}")
 
 # ==========================================
-# CALCULATE STATISTICS
+# COMPUTE STATISTICAL METRICS
 # ==========================================
 print("\n" + "="*60)
 print("CALCULATING STATISTICS...")
@@ -150,7 +150,7 @@ latencies_client = np.array(latencies_client)
 latencies_server = np.array(latencies_server)
 overhead = latencies_client - latencies_server
 
-# Calculate percentiles
+# Determine percentile metrics
 p50_client = np.percentile(latencies_client, 50)
 p90_client = np.percentile(latencies_client, 90)
 p95_client = np.percentile(latencies_client, 95)
@@ -166,7 +166,7 @@ p90_overhead = np.percentile(overhead, 90)
 p95_overhead = np.percentile(overhead, 95)
 
 # ==========================================
-# DISPLAY RESULTS
+# OUTPUT PERFORMANCE RESULTS
 # ==========================================
 print("\n" + "="*60)
 print("RESULTS: End-to-End API Latency")
@@ -198,7 +198,7 @@ print(f"  P95      : {p95_overhead:.2f} ms")
 print("="*60)
 
 # ==========================================
-# BREAKDOWN
+# LATENCY DISTRIBUTION BREAKDOWN
 # ==========================================
 print("\nLATENCY BREAKDOWN:")
 print(f"  ML Inference:        ~{latencies_server.mean():.0f} ms ({latencies_server.mean()/latencies_client.mean()*100:.1f}%)")
@@ -238,7 +238,7 @@ ax.set_title('Server-Side ML Inference Distribution', fontsize=12, fontweight='b
 ax.legend()
 ax.grid(True, alpha=0.3)
 
-# 3. Comparison bar chart
+# 3. Bar chart comparing percentiles
 ax = axes[1, 0]
 categories = ['P50', 'P90', 'P95']
 client_vals = [p50_client, p90_client, p95_client]
@@ -266,7 +266,7 @@ for bars in [bars1, bars2]:
                 f'{height:.0f}ms',
                 ha='center', va='bottom', fontsize=9)
 
-# 4. Latency breakdown pie chart
+# 4. Pie chart illustrating latency composition
 ax = axes[1, 1]
 breakdown_labels = ['ML Inference', 'Other Processing']
 breakdown_sizes = [latencies_server.mean(), overhead.mean()]
@@ -293,7 +293,7 @@ print(f"✅ Chart saved to: {output_path}")
 plt.show()
 
 # ==========================================
-# SUMMARY
+# FINAL SUMMARY
 # ==========================================
 print("\n" + "="*60)
 print("BENCHMARK COMPLETE!")
