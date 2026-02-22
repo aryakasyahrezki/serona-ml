@@ -2,15 +2,15 @@ import requests
 import time
 import os
 
-# Configuration
+# API endpoint configuration and sample input setup
 API_URL = "http://localhost:8000/predict"
-TEST_IMAGE = "../data/raw_data_30s_cropped/Oval/1.jpg"  # Adjust path if needed
+TEST_IMAGE = "../data/raw_data_30s_cropped/Oval/1.jpg"  # Ensure the image path is correct before running
 
 print("="*60)
 print("TESTING API SPEED - FILE PRELOADING TEST")
 print("="*60)
 
-# Check if file exists
+# Check whether the image file exists
 if not os.path.exists(TEST_IMAGE):
     print(f"❌ Image not found: {TEST_IMAGE}")
     print("Please update TEST_IMAGE path in the script")
@@ -20,23 +20,23 @@ print(f"Test image: {TEST_IMAGE}")
 print(f"API URL: {API_URL}")
 print()
 
-# ===== PRE-LOAD FILE INTO MEMORY =====
+# ===== LOAD FILE INTO MEMORY FIRST =====
 print("Loading image into memory...")
 with open(TEST_IMAGE, 'rb') as f:
-    file_content = f.read()  # Read entire file into RAM
+    file_content = f.read()  # Store file content directly into RAM
 
 file_size_kb = len(file_content) / 1024
 print(f"✅ Image loaded: {file_size_kb:.1f} KB")
 print()
 
-# Test 5 times
+# Perform 5 repeated request tests
 print("Running 5 test requests (file pre-loaded in memory)...")
 print("-"*60)
 
 times = []
 
 for i in range(5):
-    # ✅ NEW: File is already in memory, just measure the HTTP request
+    # Measure only the HTTP request time (file already preloaded)
     start = time.time()
     
     try:
@@ -59,7 +59,7 @@ for i in range(5):
             print(f"  Server ML time: {data.get('server_inference_ms')} ms")
             print(f"  Server total: {data.get('total_request_ms')} ms")
             
-            # Show breakdown if available
+            # Display detailed timing breakdown if provided
             if 'breakdown' in data:
                 breakdown = data['breakdown']
                 print(f"  Server breakdown:")
