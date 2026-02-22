@@ -1,8 +1,8 @@
 """
 unit_tests.py
 
-Objective: Pytest unit tests for the face shape classification model.
-           Tests model structure, inference correctness, and API code validity.
+Purpose: Pytest suite for validating the face shape classification system.
+         Covers artifact structure, inference behavior, and API implementation integrity.
 
 Run with:
     pytest machine_learning_final/tests/unit_tests.py -v
@@ -76,7 +76,7 @@ def dummy_sample(feature_names):
 # ==========================================
 
 class TestModelStructure:
-    """Tests that the model artifact has correct structure and metadata."""
+    """Ensure the saved model artifact contains proper structure and required metadata."""
 
     def test_model_file_exists(self):
         """Model file must exist at expected path."""
@@ -142,7 +142,7 @@ class TestModelStructure:
 # ==========================================
 
 class TestInference:
-    """Tests that model inference produces correct and valid outputs."""
+    """Validate that inference generates consistent and logically correct outputs."""
 
     def test_predict_returns_valid_class(self, pipeline, label_encoder, dummy_sample):
         """Prediction must return a valid face shape class."""
@@ -223,7 +223,7 @@ class TestInference:
 # ==========================================
 
 class TestInputValidation:
-    """Tests that the model handles edge case inputs gracefully."""
+    """Verify model robustness against boundary and extreme input values."""
 
     def test_boundary_ratios(self, pipeline, label_encoder, feature_names):
         """Model must handle boundary feature values without crashing."""
@@ -270,7 +270,7 @@ class TestInputValidation:
 # ==========================================
 
 class TestAPICode:
-    """Tests that api.py has correct structure and required components."""
+    """Confirm that api.py includes mandatory endpoints and valid structure."""
 
     def test_api_file_exists(self):
         """api.py must exist at expected path."""
@@ -310,7 +310,7 @@ class TestAPICode:
             "api.py must load 'pipeline' from artifact"
 
     def test_api_correct_response_keys(self):
-        """api.py must return correct response keys for Android compatibility."""
+        """Ensure api.py returns all mandatory response fields required by the Android client."""
         with open(API_PATH, 'r') as f:
             source = f.read()
         required_keys = ['"status"', '"shape"', '"skintone"', '"server_inference_ms"']
