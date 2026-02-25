@@ -10,6 +10,7 @@ import warnings
 
 # Suppress MediaPipe/protobuf warnings for clean output
 warnings.filterwarnings("ignore")
+# Disable TensorFlow logging to reduce console clutter
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # ==========================================
@@ -22,9 +23,10 @@ print(f"📂 Model Path: {MODEL_PATH}")
 print("⏳ Loading AI Models...")
 
 try:
+    # Load the model artifact containing the pipeline and metadata
     artifact = joblib.load(MODEL_PATH)
 
-    # ✅ NEW: Load from pipeline structure (matches current model.pkl)
+    # Load from pipeline structure (matches current model.pkl)
     pipeline = artifact['pipeline']
     label_encoder = artifact['label_encoder']
     class_names = label_encoder.classes_
@@ -42,10 +44,11 @@ except Exception as e:
 # ==========================================
 # 2. INIT MEDIAPIPE
 # ==========================================
+# Initialize the high-fidelity 3D face mesh solution
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
     max_num_faces=1,
-    refine_landmarks=True,
+    refine_landmarks=True, # Enable detailed tracking around eyes and lips
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
 )
@@ -65,6 +68,7 @@ def extract_features(landmarks, w, h):
     def dist(idx1, idx2):
         return np.linalg.norm(coords[idx1] - coords[idx2])
 
+    # Calculate angles using cosine rule
     def angle(idx1, idx2, idx3):
         a = dist(idx2, idx3)
         b = dist(idx1, idx2)
@@ -124,10 +128,10 @@ def predict_face_shape(features_dict):
     Return: Tuple (shape_label, confidence_percent) or (None, 0) if fails.
     """
     try:
-        # ✅ Convert to DataFrame with correct column order (matches training)
+        # Convert to DataFrame with correct column order (matches training)
         X_input = pd.DataFrame([features_dict], columns=feature_names)
 
-        # ✅ Pipeline handles poly → scale → select → predict automatically
+        # Pipeline handles poly → scale → select → predict automatically
         pred_idx = pipeline.predict(X_input)[0]
         prob = np.max(pipeline.predict_proba(X_input))
 

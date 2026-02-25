@@ -102,6 +102,7 @@ def main():
     # ==========================================
     # 3. COMPONENT SIZE BREAKDOWN
     # ==========================================
+    # identifies which part of the pipeline consumes the most memory
     print(f"\n🔍 COMPONENT SIZE BREAKDOWN (in-memory):")
     print(f"   {'Component':<25} {'Size':>10}")
     print(f"   {'-'*35}")
@@ -187,6 +188,7 @@ def main():
     print(f"   Model Size Rating: {rating}")
     print(f"   Note             : {note}")
     print(f"   File Size        : {format_size(file_size)}")
+    # Estimate runtime RAM needs based on serialized size
     print(f"   RAM Required     : ~{format_size({'bytes': total_component_size * 3, 'kb': total_component_size * 3 / 1024, 'mb': total_component_size * 3 / (1024*1024)})} (estimated 3x file size)")
 
     # ==========================================

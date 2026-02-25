@@ -136,6 +136,7 @@ def main():
 
     after_load_ram = get_ram_usage()
     load_time_ms = (load_end - load_start) * 1000
+    # Calculate exactly how many MBs the model added to the process
     load_overhead_mb = after_load_ram['rss_mb'] - baseline_ram['rss_mb']
 
     print(f"\n📦 AFTER MODEL LOADING:")
@@ -180,7 +181,7 @@ def main():
     print(f"   {'-'*35}")
 
     for batch_size in batch_sizes:
-        # Create batch
+        # Construct a larger dataset by repeating the dummy sample
         batch_data = pd.concat([dummy_sample] * batch_size, ignore_index=True)
 
         # Measure
@@ -247,7 +248,8 @@ def main():
     ]
 
     for tier_name, tier_ram_mb in tiers:
-        fits = total_needed < tier_ram_mb * 0.7  # Use max 70% of RAM
+        # Safety Margin: Only approve if the app uses < 70% of the tier's RAM
+        fits = total_needed < tier_ram_mb * 0.7  
         status = "✅ FITS" if fits else "❌ TOO LARGE"
         print(f"   {tier_name:<35} {status}")
 
