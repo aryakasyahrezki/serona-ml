@@ -2,15 +2,16 @@
 unit_tests.py
 
 Purpose: Pytest suite for validating the face shape classification system.
-         Covers artifact structure, inference behavior, and API implementation integrity.
+         Covers artifact structure, inference behavior, and API integrity.
 
 Run with:
          pytest machine_learning_final/tests/unit_tests.py -v
 """
 
 import os
-import pytest
+import ast
 import joblib
+import pytest
 import numpy as np
 import pandas as pd
 
@@ -27,6 +28,7 @@ EXPECTED_FEATURES = [
 ]
 MIN_CV_F1_MACRO = 0.65  # Changed from MIN_CV_ACCURACY
 EXPECTED_SEED = 4  # Changed from 47
+
 
 # ==========================================
 # FIXTURES
@@ -72,13 +74,14 @@ def dummy_sample(feature_names):
         'extent': 0.79
     }], columns=feature_names)
 
+
 # ==========================================
 # 1. MODEL STRUCTURE TESTS
 # ==========================================
 
 
 class TestModelStructure:
-    """Ensure the saved model artifact contains proper structure and required metadata."""
+    """Ensure the saved model artifact contains proper structure."""
 
     def test_model_file_exists(self):
         """Model file must exist at expected path."""
@@ -193,15 +196,17 @@ class TestModelStructure:
         assert size_mb < 50, \
             f"Model file too large: {size_mb:.2f}MB (limit: 50MB)"
 
+
 # ==========================================
 # 2. INFERENCE TESTS
 # ==========================================
 
 
 class TestInference:
-    """Validate that inference generates consistent and logically correct outputs."""
+    """Validate that inference generates consistent outputs."""
 
-    def test_predict_returns_valid_class(self, pipeline, label_encoder, dummy_sample):
+    def test_predict_returns_valid_class(self, pipeline,
+                                         label_encoder, dummy_sample):
         """Prediction must return a valid face shape class."""
         pred_idx = pipeline.predict(dummy_sample)[0]
         shape = label_encoder.classes_[pred_idx]
@@ -252,7 +257,8 @@ class TestInference:
         except Exception as e:
             pytest.fail(f"Pipeline failed on valid DataFrame input: {e}")
 
-    def test_multiple_samples_inference(self, pipeline, label_encoder, feature_names):
+    def test_multiple_samples_inference(self, pipeline,
+                                        label_encoder, feature_names):
         """Pipeline must handle multiple samples correctly."""
         samples = pd.DataFrame([
             {
@@ -275,13 +281,14 @@ class TestInference:
         for pred in preds:
             assert label_encoder.classes_[pred] in EXPECTED_CLASSES
 
+
 # ==========================================
 # 3. INPUT VALIDATION TESTS
 # ==========================================
 
 
 class TestInputValidation:
-    """Verify model robustness against boundary and extreme input values."""
+    """Verify model robustness against extreme input values."""
 
     def test_boundary_ratios(self, pipeline, label_encoder, feature_names):
         """Model must handle boundary feature values without crashing."""
@@ -323,13 +330,14 @@ class TestInputValidation:
         except Exception as e:
             pytest.fail(f"Model failed on high feature values: {e}")
 
+
 # ==========================================
 # 4. API CODE TESTS
 # ==========================================
 
 
 class TestAPICode:
-    """Confirm that api.py includes mandatory endpoints and valid structure."""
+    """Confirm that api.py includes mandatory endpoints."""
 
     def test_api_file_exists(self):
         """api.py must exist at expected path."""
@@ -337,7 +345,6 @@ class TestAPICode:
 
     def test_api_syntax_valid(self):
         """api.py must have valid Python syntax."""
-        import ast
         with open(API_PATH, 'r') as f:
             source = f.read()
         try:
@@ -347,13 +354,16 @@ class TestAPICode:
 
     def test_api_required_functions(self):
         """api.py must contain all required endpoint functions."""
-        import ast
         with open(API_PATH, 'r') as f:
             source = f.read()
 
         tree = ast.parse(source)
-        functions = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
-        required = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
+        # Check both regular and async functions
+        functions = [n.name for n in ast.walk(tree) if isinstance(
+            n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        required = [
+            'extract_features', 'analyze_skintone', 'home', 'predict_face'
+        ]
 
         for func in required:
             assert func in functions, \
@@ -364,21 +374,24 @@ class TestAPICode:
         with open(API_PATH, 'r') as f:
             source = f.read()
         assert "pipeline" in source, \
-            "api.py must use 'pipeline' variable (new model structure)"
+            "api.py must use 'pipeline' variable"
         assert "artifact['pipeline']" in source, \
             "api.py must load 'pipeline' from artifact"
 
     def test_api_correct_response_keys(self):
-        """Ensure api.py returns all mandatory response fields required by the Android client."""
+        """Ensure api.py returns all mandatory response fields."""
         with open(API_PATH, 'r') as f:
             source = f.read()
-        required_keys = ['"status"', '"shape"', '"skintone"', '"server_inference_ms"']
+        required_keys = [
+            '"status"', '"shape"', '"skintone"', '"server_inference_ms"'
+        ]
         for key in required_keys:
             assert key in source, \
                 f"api.py response missing key: {key}"
 
+
 # ==========================================
-# 5. METRICS VALIDATION TESTS (NEW)
+# 5. METRICS VALIDATION TESTS
 # ==========================================
 
 
@@ -422,7 +435,7 @@ class TestMetricsValidation:
                 f"F1 for '{class_name}' = {f1} is out of range [0, 1]"
 
     def test_support_values_correct(self, artifact):
-        """Support values must be positive integers summing to total samples."""
+        """Support values must be summing to total samples."""
         per_class = artifact['per_class_metrics']
 
         total_support = sum(m['support'] for m in per_class.values())
@@ -432,12 +445,11 @@ class TestMetricsValidation:
             f"Total support {total_support} != expected {expected_support}"
 
     def test_train_better_than_cv(self, artifact):
-        """Training F1 should typically be >= CV F1 (can be equal for good models)."""
+        """Training F1 should typically be >= CV F1."""
         metrics = artifact['metrics']
         train_f1 = metrics['train_f1_macro']
         cv_f1 = metrics['cv_f1_macro']
 
         # Allow small margin for statistical variation
         assert train_f1 >= cv_f1 - 0.05, \
-            f"Train F1 ({train_f1:.4f}) suspiciously lower than CV F1 ({cv_f1:.4f})"
-        
+            f"Train F1 ({train_f1:.4f}) suspiciously lower than CV F1"

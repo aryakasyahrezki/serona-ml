@@ -48,8 +48,8 @@ jobs:
       - name: Lint unit_tests.py
         run: |
           flake8 machine_learning_final/tests/unit_tests.py \
-            --max-line-length=120 \
-            --ignore=E501,W503,E302,E303,W291,W293 \
+            --max-line-length=127 \
+            --extend-ignore=E203,E302,E305,W291,W293 \
             --statistics
           echo "✅ unit_tests.py lint passed"
 
