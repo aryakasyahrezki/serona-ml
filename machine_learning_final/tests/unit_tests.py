@@ -434,4 +434,3 @@ class TestMetricsValidation:
         # Allow small margin for statistical variation
         assert train_f1 >= cv_f1 - 0.05, \
             f"Train F1 ({train_f1:.4f}) suspiciously lower than CV F1 ({cv_f1:.4f})"
-        
