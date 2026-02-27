@@ -5,7 +5,7 @@ Purpose: Pytest suite for validating the face shape classification system.
          Covers artifact structure, inference behavior, and API implementation integrity.
 
 Run with:
-    pytest machine_learning_final/tests/unit_tests.py -v
+         pytest machine_learning_final/tests/unit_tests.py -v
 """
 
 import os
@@ -31,6 +31,7 @@ EXPECTED_SEED = 4  # Changed from 47
 # ==========================================
 # FIXTURES
 # ==========================================
+
 
 @pytest.fixture(scope='module')
 def artifact():
@@ -75,6 +76,7 @@ def dummy_sample(feature_names):
 # 1. MODEL STRUCTURE TESTS
 # ==========================================
 
+
 class TestModelStructure:
     """Ensure the saved model artifact contains proper structure and required metadata."""
 
@@ -94,13 +96,13 @@ class TestModelStructure:
     def test_metrics_dict_present(self, artifact):
         """Metrics dictionary must be present with required keys."""
         assert 'metrics' in artifact, "Missing 'metrics' dictionary"
-        
+
         required_metrics = [
             'cv_f1_macro', 'cv_f1_std', 'cv_accuracy', 'cv_accuracy_std',
             'cv_precision_macro', 'cv_recall_macro', 'train_f1_macro',
             'train_f1_std', 'overfitting_gap'
         ]
-        
+
         for metric in required_metrics:
             assert metric in artifact['metrics'], \
                 f"Missing metric: '{metric}' in artifact['metrics']"
@@ -108,12 +110,12 @@ class TestModelStructure:
     def test_per_class_metrics_present(self, artifact):
         """Per-class metrics must be present for all classes."""
         assert 'per_class_metrics' in artifact, "Missing 'per_class_metrics'"
-        
+
         per_class = artifact['per_class_metrics']
         for class_name in EXPECTED_CLASSES:
             assert class_name in per_class, \
                 f"Missing per-class metrics for '{class_name}'"
-            
+
             # Check required keys per class
             required_keys = ['precision', 'recall', 'f1-score', 'support']
             for key in required_keys:
@@ -135,7 +137,7 @@ class TestModelStructure:
         """F1-Macro must also exist in metrics dictionary."""
         cv_f1_top = artifact['cv_f1_macro']
         cv_f1_metrics = artifact['metrics']['cv_f1_macro']
-        
+
         # Should be the same value
         assert abs(cv_f1_top - cv_f1_metrics) < 1e-6, \
             f"F1-Macro mismatch: top-level={cv_f1_top}, metrics={cv_f1_metrics}"
@@ -174,7 +176,7 @@ class TestModelStructure:
         n_selected = artifact['metadata']['n_features_selected']
         assert n_selected >= 1, \
             f"Expected at least 1 selected feature, got {n_selected}"
-        
+
         # Also check it's reasonable (not all 44 polynomial features)
         assert n_selected <= 44, \
             f"Too many selected features: {n_selected}"
@@ -194,6 +196,7 @@ class TestModelStructure:
 # ==========================================
 # 2. INFERENCE TESTS
 # ==========================================
+
 
 class TestInference:
     """Validate that inference generates consistent and logically correct outputs."""
@@ -276,6 +279,7 @@ class TestInference:
 # 3. INPUT VALIDATION TESTS
 # ==========================================
 
+
 class TestInputValidation:
     """Verify model robustness against boundary and extreme input values."""
 
@@ -323,6 +327,7 @@ class TestInputValidation:
 # 4. API CODE TESTS
 # ==========================================
 
+
 class TestAPICode:
     """Confirm that api.py includes mandatory endpoints and valid structure."""
 
@@ -347,7 +352,7 @@ class TestAPICode:
             source = f.read()
 
         tree = ast.parse(source)
-        functions = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+        functions = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
         required = ['extract_features', 'analyze_skintone', 'home', 'predict_face']
 
         for func in required:
@@ -376,6 +381,7 @@ class TestAPICode:
 # 5. METRICS VALIDATION TESTS (NEW)
 # ==========================================
 
+
 class TestMetricsValidation:
     """Validate that all metrics are within reasonable ranges."""
 
@@ -389,7 +395,7 @@ class TestMetricsValidation:
     def test_f1_scores_in_valid_range(self, artifact):
         """F1 scores must be between 0 and 1."""
         metrics = artifact['metrics']
-        
+
         f1_keys = ['cv_f1_macro', 'train_f1_macro']
         for key in f1_keys:
             value = metrics[key]
@@ -399,7 +405,7 @@ class TestMetricsValidation:
     def test_std_values_reasonable(self, artifact):
         """Standard deviation values must be positive and reasonable."""
         metrics = artifact['metrics']
-        
+
         std_keys = ['cv_f1_std', 'train_f1_std', 'cv_accuracy_std']
         for key in std_keys:
             value = metrics[key]
@@ -409,7 +415,7 @@ class TestMetricsValidation:
     def test_per_class_f1_scores_valid(self, artifact):
         """Per-class F1 scores must be between 0 and 1."""
         per_class = artifact['per_class_metrics']
-        
+
         for class_name, metrics in per_class.items():
             f1 = metrics['f1-score']
             assert 0.0 <= f1 <= 1.0, \
@@ -418,10 +424,10 @@ class TestMetricsValidation:
     def test_support_values_correct(self, artifact):
         """Support values must be positive integers summing to total samples."""
         per_class = artifact['per_class_metrics']
-        
+
         total_support = sum(m['support'] for m in per_class.values())
         expected_support = artifact['metadata']['n_samples']
-        
+
         assert total_support == expected_support, \
             f"Total support {total_support} != expected {expected_support}"
 
@@ -430,7 +436,8 @@ class TestMetricsValidation:
         metrics = artifact['metrics']
         train_f1 = metrics['train_f1_macro']
         cv_f1 = metrics['cv_f1_macro']
-        
+
         # Allow small margin for statistical variation
         assert train_f1 >= cv_f1 - 0.05, \
             f"Train F1 ({train_f1:.4f}) suspiciously lower than CV F1 ({cv_f1:.4f})"
+        
