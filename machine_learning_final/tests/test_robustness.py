@@ -254,7 +254,7 @@ def main():
     label_encoder = artifact['label_encoder']
     feature_names = artifact['feature_names']
 
-    print(f"\n✅ Model loaded (CV accuracy: {artifact['cv_accuracy']*100:.2f}%)")
+    print(f"\n✅ Model loaded (F1 - Macro: {artifact['metrics']['cv_f1_macro']*100:.2f}%)")
 
     # Define perturbation tests
     perturbations = {

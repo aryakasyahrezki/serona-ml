@@ -459,7 +459,7 @@ jobs:
           import wandb
           import os
           wandb.login()
-          run = wandb.init(project='serona-ml')
+          run = wandb.init(project='serona-ml', entity='aryakasyahrezki-binus-university')
           # Menarik model dengan label 'latest'
           artifact = run.use_artifact('serona-face-model:latest')
           # Download dan taruh di folder yang benar agar terbawa ke Docker

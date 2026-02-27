@@ -51,7 +51,7 @@ try:
     print(f"   Classes: {list(class_names)}")
     print(f"   Features: {len(feature_names)}")
     print(f"   Random Seed: {artifact['random_seed']}")
-    print(f"   CV Accuracy: {artifact['cv_accuracy'] * 100:.2f}%")
+    print(f"   CV F1-Macro: {artifact['metrics']['cv_f1_macro'] * 100:.2f}%")
     print(f"   Selected Features: {artifact['metadata']['n_features_selected']}")
     print("=" * 60)
 

@@ -91,7 +91,7 @@ def main():
     artifact = joblib.load(MODEL_PATH)
 
     print(f"\n📊 MODEL METADATA:")
-    print(f"   CV Accuracy      : {artifact['cv_accuracy'] * 100:.2f}%")
+    print(f"   CV F1-Macro      : {artifact['metrics']['cv_f1_macro'] * 100:.2f}%")
     print(f"   CV Std Dev       : {artifact.get('cv_std', 0) * 100:.2f}%")
     print(f"   Random Seed      : {artifact['random_seed']}")
     print(f"   Original Features: {artifact['metadata']['n_features_original']}")

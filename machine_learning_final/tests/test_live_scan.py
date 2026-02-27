@@ -33,7 +33,7 @@ try:
     feature_names = artifact['feature_names']
 
     print("✅ Model Loaded Successfully.")
-    print(f"   CV Accuracy : {artifact['cv_accuracy']*100:.2f}%")
+    print(f"   CV F1-Macro : {artifact['metrics']['cv_f1_macro']*100:.2f}%")
     print(f"   Classes     : {list(class_names)}")
     print(f"   Features    : {feature_names}")
 
