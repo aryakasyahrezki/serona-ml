@@ -25,8 +25,8 @@ EXPECTED_FEATURES = [
     'ratio_len_width', 'ratio_jaw_cheek', 'ratio_forehead_jaw',
     'avg_jaw_angle', 'ratio_chin_jaw', 'circularity', 'solidity', 'extent'
 ]
-MIN_CV_ACCURACY = 0.65
-EXPECTED_SEED = 47
+MIN_CV_F1_MACRO = 0.65  # Changed from MIN_CV_ACCURACY
+EXPECTED_SEED = 4  # Changed from 47
 
 # ==========================================
 # FIXTURES
@@ -86,21 +86,65 @@ class TestModelStructure:
         """All required keys must be present in the artifact."""
         required_keys = [
             'pipeline', 'label_encoder', 'feature_names',
-            'random_seed', 'cv_accuracy', 'metadata'
+            'random_seed', 'cv_f1_macro', 'metrics', 'metadata'
         ]
         for key in required_keys:
             assert key in artifact, f"Missing key: '{key}' in model artifact"
 
+    def test_metrics_dict_present(self, artifact):
+        """Metrics dictionary must be present with required keys."""
+        assert 'metrics' in artifact, "Missing 'metrics' dictionary"
+        
+        required_metrics = [
+            'cv_f1_macro', 'cv_f1_std', 'cv_accuracy', 'cv_accuracy_std',
+            'cv_precision_macro', 'cv_recall_macro', 'train_f1_macro',
+            'train_f1_std', 'overfitting_gap'
+        ]
+        
+        for metric in required_metrics:
+            assert metric in artifact['metrics'], \
+                f"Missing metric: '{metric}' in artifact['metrics']"
+
+    def test_per_class_metrics_present(self, artifact):
+        """Per-class metrics must be present for all classes."""
+        assert 'per_class_metrics' in artifact, "Missing 'per_class_metrics'"
+        
+        per_class = artifact['per_class_metrics']
+        for class_name in EXPECTED_CLASSES:
+            assert class_name in per_class, \
+                f"Missing per-class metrics for '{class_name}'"
+            
+            # Check required keys per class
+            required_keys = ['precision', 'recall', 'f1-score', 'support']
+            for key in required_keys:
+                assert key in per_class[class_name], \
+                    f"Missing '{key}' in per_class_metrics['{class_name}']"
+
     def test_correct_random_seed(self, artifact):
-        """Model must be trained with seed 47."""
+        """Model must be trained with seed 4."""
         assert artifact['random_seed'] == EXPECTED_SEED, \
             f"Expected seed {EXPECTED_SEED}, got {artifact['random_seed']}"
 
-    def test_minimum_accuracy(self, artifact):
-        """CV accuracy must meet minimum threshold."""
-        cv_acc = artifact['cv_accuracy']
-        assert cv_acc >= MIN_CV_ACCURACY, \
-            f"CV accuracy {cv_acc:.2%} is below minimum {MIN_CV_ACCURACY:.2%}"
+    def test_minimum_f1_macro(self, artifact):
+        """CV F1-Macro must meet minimum threshold."""
+        cv_f1 = artifact['cv_f1_macro']
+        assert cv_f1 >= MIN_CV_F1_MACRO, \
+            f"CV F1-Macro {cv_f1:.2%} is below minimum {MIN_CV_F1_MACRO:.2%}"
+
+    def test_f1_macro_in_metrics(self, artifact):
+        """F1-Macro must also exist in metrics dictionary."""
+        cv_f1_top = artifact['cv_f1_macro']
+        cv_f1_metrics = artifact['metrics']['cv_f1_macro']
+        
+        # Should be the same value
+        assert abs(cv_f1_top - cv_f1_metrics) < 1e-6, \
+            f"F1-Macro mismatch: top-level={cv_f1_top}, metrics={cv_f1_metrics}"
+
+    def test_optimization_metric(self, artifact):
+        """Metadata must indicate f1_macro as optimization metric."""
+        opt_metric = artifact['metadata'].get('optimization_metric')
+        assert opt_metric == 'f1_macro', \
+            f"Expected optimization_metric='f1_macro', got '{opt_metric}'"
 
     def test_correct_classes(self, label_encoder):
         """Label encoder must have exactly 5 correct classes."""
@@ -130,6 +174,16 @@ class TestModelStructure:
         n_selected = artifact['metadata']['n_features_selected']
         assert n_selected >= 1, \
             f"Expected at least 1 selected feature, got {n_selected}"
+        
+        # Also check it's reasonable (not all 44 polynomial features)
+        assert n_selected <= 44, \
+            f"Too many selected features: {n_selected}"
+
+    def test_overfitting_gap_reasonable(self, artifact):
+        """Overfitting gap must be reasonable (not too high)."""
+        gap = artifact['metrics']['overfitting_gap']
+        assert gap < 20, \
+            f"Overfitting gap too high: {gap:.2f}% (indicates overfitting)"
 
     def test_model_file_size(self):
         """Model file must be under 50MB."""
@@ -317,3 +371,67 @@ class TestAPICode:
         for key in required_keys:
             assert key in source, \
                 f"api.py response missing key: {key}"
+
+# ==========================================
+# 5. METRICS VALIDATION TESTS (NEW)
+# ==========================================
+
+class TestMetricsValidation:
+    """Validate that all metrics are within reasonable ranges."""
+
+    def test_all_metrics_are_floats(self, artifact):
+        """All metric values must be numeric."""
+        metrics = artifact['metrics']
+        for key, value in metrics.items():
+            assert isinstance(value, (int, float, np.number)), \
+                f"Metric '{key}' is not numeric: {type(value)}"
+
+    def test_f1_scores_in_valid_range(self, artifact):
+        """F1 scores must be between 0 and 1."""
+        metrics = artifact['metrics']
+        
+        f1_keys = ['cv_f1_macro', 'train_f1_macro']
+        for key in f1_keys:
+            value = metrics[key]
+            assert 0.0 <= value <= 1.0, \
+                f"{key} = {value} is out of valid range [0, 1]"
+
+    def test_std_values_reasonable(self, artifact):
+        """Standard deviation values must be positive and reasonable."""
+        metrics = artifact['metrics']
+        
+        std_keys = ['cv_f1_std', 'train_f1_std', 'cv_accuracy_std']
+        for key in std_keys:
+            value = metrics[key]
+            assert 0.0 <= value <= 0.5, \
+                f"{key} = {value} is unreasonably high (> 0.5)"
+
+    def test_per_class_f1_scores_valid(self, artifact):
+        """Per-class F1 scores must be between 0 and 1."""
+        per_class = artifact['per_class_metrics']
+        
+        for class_name, metrics in per_class.items():
+            f1 = metrics['f1-score']
+            assert 0.0 <= f1 <= 1.0, \
+                f"F1 for '{class_name}' = {f1} is out of range [0, 1]"
+
+    def test_support_values_correct(self, artifact):
+        """Support values must be positive integers summing to total samples."""
+        per_class = artifact['per_class_metrics']
+        
+        total_support = sum(m['support'] for m in per_class.values())
+        expected_support = artifact['metadata']['n_samples']
+        
+        assert total_support == expected_support, \
+            f"Total support {total_support} != expected {expected_support}"
+
+    def test_train_better_than_cv(self, artifact):
+        """Training F1 should typically be >= CV F1 (can be equal for good models)."""
+        metrics = artifact['metrics']
+        train_f1 = metrics['train_f1_macro']
+        cv_f1 = metrics['cv_f1_macro']
+        
+        # Allow small margin for statistical variation
+        assert train_f1 >= cv_f1 - 0.05, \
+            f"Train F1 ({train_f1:.4f}) suspiciously lower than CV F1 ({cv_f1:.4f})"
+        

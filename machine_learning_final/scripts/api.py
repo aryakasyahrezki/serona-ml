@@ -56,7 +56,7 @@ try:
     print("=" * 60)
 
 except Exception as e:
-    print(f"❌ Critical Error: {e}")
+    print(f" Critical Error: {e}")
     exit()
 
 # Init MediaPipe Face Mesh
@@ -329,7 +329,7 @@ async def predict_endpoint(file: UploadFile = File(...)):
         print("[REQUEST BREAKDOWN]")
         print(f"  1. File Read        : {file_read_ms:6.2f} ms ({file_read_ms / total_request_ms * 100:5.1f}%)")
         print(f"  2. Image Decode     : {decode_ms:6.2f} ms ({decode_ms / total_request_ms * 100:5.1f}%)")
-        print(f"  3. MediaPipe        : {mediapipe_ms:6.2f} ms ({mediapipe_ms / total_request_ms * 100:5.1f}%)  ⚠️")
+        print(f"  3. MediaPipe        : {mediapipe_ms:6.2f} ms ({mediapipe_ms / total_request_ms * 100:5.1f}%)")
         print(f"  4. Feature Extract  : {feature_extraction_ms:6.2f} ms ({feature_extraction_ms / total_request_ms * 100:5.1f}%)")
         print(f"  5. ML Inference     : {inference_ms:6.2f} ms ({inference_ms / total_request_ms * 100:5.1f}%)")
         print(f"  6. Skintone Analysis: {skintone_ms:6.2f} ms ({skintone_ms / total_request_ms * 100:5.1f}%)")
