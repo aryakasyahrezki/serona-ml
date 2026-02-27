@@ -134,7 +134,7 @@ jobs:
           echo "✅ model.pkl found"
           ls -lh machine_learning_final/models/model.pkl
 
-      - name: Validate model structure and accuracy
+      - name: Validate model structure and F1-macro
         run: |
           python -c "
           import joblib
@@ -142,32 +142,35 @@ jobs:
 
           artifact = joblib.load('machine_learning_final/models/model.pkl')
 
-          # Check all required keys exist
-          required_keys = ['pipeline', 'label_encoder', 'feature_names',
-                           'random_seed', 'cv_accuracy', 'metadata']
+          # Required keys (updated for F1 version)
+          required_keys = [
+              'pipeline', 'label_encoder', 'feature_names',
+              'random_seed', 'cv_f1_macro', 'metrics', 'metadata'
+          ]
+
           for key in required_keys:
               if key not in artifact:
                   print(f'❌ Missing key: {key}')
                   sys.exit(1)
 
-          cv_acc = artifact['cv_accuracy']
-          seed   = artifact['random_seed']
+          cv_f1 = artifact['cv_f1_macro']
+          seed  = artifact['random_seed']
           n_feat = artifact['metadata']['n_features_selected']
-          classes = artifact['metadata']['classes']
+          classes = artifact['label_encoder'].classes_
 
           print(f'✅ Model loaded successfully')
           print(f'   Random Seed      : {seed}')
-          print(f'   CV Accuracy      : {cv_acc*100:.2f}%')
+          print(f'   CV F1-Macro      : {cv_f1*100:.2f}%')
           print(f'   Selected Features: {n_feat}')
-          print(f'   Classes          : {classes}')
+          print(f'   Classes          : {list(classes)}')
 
-          # Minimum accuracy gate
-          MIN_ACCURACY = 0.65
-          if cv_acc < MIN_ACCURACY:
-              print(f'❌ Accuracy {cv_acc:.2%} is below minimum threshold {MIN_ACCURACY:.2%}')
+          # Minimum F1 gate
+          MIN_F1 = 0.65
+          if cv_f1 < MIN_F1:
+              print(f'❌ F1-Macro {cv_f1:.2%} is below minimum threshold {MIN_F1:.2%}')
               sys.exit(1)
 
-          print(f'✅ Accuracy check passed (>= {MIN_ACCURACY:.0%})')
+          print(f'✅ F1-Macro check passed (>= {MIN_F1:.0%})')
           "
 
       - name: Validate inference works
