@@ -18,6 +18,8 @@
 2. **Skin tone detection** — color analysis on certain face regions (Fair Light, Medium Tan, Deep)
 3. **Personalized recommendations** — step-by-step WikiHow-style makeup tutorial articles tailored to the user's face shape and skin tone
 
+[Download on Google Playstore]([https://github.com/aryakasyahrezki/serona-android](https://play.google.com/store/apps/details?id=com.serona.app&pcampaignid=web_share))
+
 ---
 
 ## 📱 App Screenshots
