@@ -175,7 +175,8 @@ serona-ml/
 │   │
 │   ├── scripts/
 │   │   ├── api.py                  # FastAPI application
-│   │   └── process_raw_data.py     # Feature extraction from raw images
+│   │   ├── process_raw_data.py     # Feature extraction from raw images
+│   │   └── register_model.py       # Model versioning using W&B
 │   │
 │   └── tests/
 |       ├── test_api_health.py      # Quick API sanity check
@@ -203,11 +204,11 @@ serona-ml/
 | **Feature Selection** | RFECV (Recursive Feature Elimination with CV) |
 | **CV Strategy** | Stratified K-Fold (k=5) |
 | **Input Features** | 8 geometric facial ratios |
-| **Selected Features** | 9 (from 44 polynomial features) |
+| **Selected Features** | 10 (from 44 polynomial features) |
 | **Classes** | Heart, Oblong, Oval, Round, Square |
 | **Training Samples** | 150 (30 per class) |
-| **CV Accuracy** | 73.33% ± 5.96% |
-| **Random Seed** | 47 |
+| **CV F1-Macro** | 74.21% ± 7.53% |
+| **Random Seed** | 4 |
 
 ### Input Features
 
@@ -230,10 +231,10 @@ Features extracted from facial landmarks detected by **MediaPipe Face Mesh**:
 Raw Image
     │
     ▼
-MediaPipe Face Mesh          (~5ms — landmark detection)
+MediaPipe Face Mesh          (landmark detection)
     │
     ▼
-Feature Extraction           (8 geometric ratios)
+Feature Extraction           (8 geometric features)
     │
     ▼
 PolynomialFeatures(degree=2) (8 → 44 features)
@@ -242,7 +243,7 @@ PolynomialFeatures(degree=2) (8 → 44 features)
 StandardScaler               (normalize features)
     │
     ▼
-RFECV                        (44 → 9 selected features)
+RFECV                        (44 → 10 selected features)
     │
     ▼
 LogisticRegression           (predict class)
@@ -264,108 +265,11 @@ Face Shape + Confidence
 
 ---
 
-## ⚡ Performance
-
-### Inference Latency (Server-Side)
-
-| Metric | Value |
-|--------|-------|
-| P50 | ~0.88 ms |
-| P90 | ~1.35 ms |
-| P95 | ~1.54 ms |
-| P99 | ~1.72 ms |
-
-### API Request Breakdown
-
-| Step | Time | % of Total |
-|------|------|-----------|
-| File Read | ~1.2 ms | 15% |
-| Image Decode | ~1.2 ms | 14% |
-| **MediaPipe** | **~4.8 ms** | **59%** ← bottleneck |
-| Feature Extraction | ~0.1 ms | 2% |
-| **ML Inference** | **~1.5 ms** | **18%** |
-| Skin Tone Analysis | ~0.3 ms | 4% |
-| **Total (server)** | **~8 ms** | |
-
-> Production estimate with mobile network (4G/5G): **~110–210 ms** end-to-end.
-
-### Model Size
-
-| Property | Value |
-|----------|-------|
-| File size | < 1 MB |
-| RAM usage (loaded) | < 50 MB |
-| Deployment rating | 🟢 Excellent — lightweight |
-
----
-
-## 🛡️ Robustness Testing
-
-Tested on 25 images (5 per class) across 11 perturbation conditions:
-
-| Condition | Accuracy | vs Baseline |
-|-----------|----------|-------------|
-| Original (Baseline) | 76.0% | — |
-| Bright +30% | 72.0% | -4.0% ✅ |
-| Dark -30% | 72.0% | -4.0% ✅ |
-| Slight Blur (3×3) | 76.0% | 0.0% ✅ |
-| Heavy Blur (7×7) | 72.0% | -4.0% ✅ |
-| Low Noise (σ=10) | 76.0% | 0.0% ✅ |
-| High Noise (σ=25) | 56.0% | -20.0% ⚠️ |
-| Rotate +5° | 64.0% | -12.0% ⚠️ |
-| Rotate -5° | 72.0% | -4.0% ✅ |
-| Rotate +10° | 60.0% | -16.0% ⚠️ |
-| Low Resolution (50%) | 72.0% | -4.0% ✅ |
-
-**Overall Rating: 🟠 Moderately Robust**
-
-- ✅ Robust to: lighting changes, blur, low resolution
-- ⚠️ Sensitive to: head rotation (geometry-based features are angle-dependent), extreme noise
-
-> **Limitation:** Rotation sensitivity is inherent to landmark-based geometric features. Mitigation: the Android app continuously scans and prompts users to face the camera straight, and the live scanning approach naturally filters out angled frames by waiting for a stable centered detection.
-
----
-
-## 🧪 Testing
-
-### Unit Tests (24 tests)
-
-```bash
-pytest machine_learning_final/tests/unit_tests.py -v
-```
-
-Covers:
-- **Model Structure** — keys, seed, accuracy threshold, classes, features, pipeline steps
-- **Inference** — valid output, probabilities sum to 1, correct shape
-- **Input Validation** — boundary values, high values don't crash
-- **API Code** — syntax, required functions, correct response keys
-
-### Other Tests
-
-```bash
-# Model size analysis
-python machine_learning_final/tests/test_model_size.py
-
-# RAM usage profiling
-python machine_learning_final/tests/test_memory_usage.py
-
-# Robustness under image perturbations
-python machine_learning_final/tests/test_robustness.py
-
-# Quick API health check (API must be running)
-python machine_learning_final/tests/test_api_health.py
-
-# Full latency benchmark (API must be running)
-python machine_learning_final/tests/test_api_latency.py
-```
-
----
-
 ## ⚙️ CI/CD
 
 This repo uses **GitHub Actions** for automated testing on every push and pull request to `main`.
 
-### Pipeline (7 jobs)
+### Pipeline (8 jobs)
 
 ```
 push / pull_request to main
@@ -376,7 +280,8 @@ push / pull_request to main
 ├── 4. API Validation   — syntax check, required functions present
 ├── 5. Latency Check    — benchmarks P50/P95 latency
 ├── 6. Model Size Check — verifies model.pkl < 50MB
-└── 7. CI Summary       — fails if any job above fails
+├── 7. CI Summary       — fails if any job above fails
+└── 8. Deploy to Azure  — model versioning and auto deployment to azure
 ```
 
 👉 [View pipeline runs](https://github.com/aryakasyahrezki/serona-ml/actions)
