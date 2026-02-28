@@ -260,7 +260,7 @@ Face Shape + Confidence
 | **Baseline (11 models)** | Logistic Regression, SVC, KNN, Naive Bayes, Decision Tree, Random Forest, Extra Trees, AdaBoost, Gradient Boosting, XGBoost, LightGBM |
 | **Hyperparameter Tuning** | GridSearchCV on best candidates (LogReg, SVC) |
 | **Advanced Strategies** | RFECV vs Stacking — RFECV selected |
-| **Stability Analysis** | 50 random seeds tested, seed 47 selected |
+| **Stability Analysis** | 50 random seeds tested, seed 4 selected |
 
 > **No data leakage** — all preprocessing (scaling, polynomial features) happens inside the sklearn Pipeline, within each CV fold.
 
@@ -277,7 +277,7 @@ push / pull_request to main
 │
 ├── 1. Lint             — flake8 on api.py, process_raw_data.py, unit_tests.py
 ├── 2. Unit Tests       — pytest (24 tests) with coverage report
-├── 3. Model Validation — loads model, checks accuracy ≥ 65%, validates inference
+├── 3. Model Validation — loads model, checks f1-score ≥ 65%, validates inference
 ├── 4. API Validation   — syntax check, required functions present
 ├── 5. Latency Check    — benchmarks P50/P95 latency
 ├── 6. Model Size Check — verifies model.pkl < 50MB
