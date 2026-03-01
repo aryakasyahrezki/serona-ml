@@ -188,6 +188,55 @@ After starting all services:
 
 ---
 
+## 📁 Project Structure
+```
+serona-ml/
+│
+├── .github/
+│   └── workflows/
+│       └── ml_pipeline.yml         # CI/CD — GitHub Actions (7 jobs)
+│
+├── assets/                         # Screenshots for README
+│   ├── ss_camera.png
+│   └── ss_result.png
+│
+├── machine_learning_final/
+│   ├── data/
+│   │   ├── processed_data/
+│   │   |   └── data_30s_cropped.csv  # 150 processed face samples
+|   |   └── raw_data_30s_cropped/
+│   │       ├── Heart                 # 30 cropped (face only) heart shaped faces
+│   │       ├── Oblong                # 30 cropped (face only) oblong shaped faces
+│   │       ├── Oval                  # 30 cropped (face only) oval shaped faces
+│   │       ├── Round                 # 30 cropped (face only) round shaped faces
+│   │       └── Square                # 30 cropped (face only) square shaped faces
+│   │
+│   ├── models/
+│   │   └── model.pkl               # Trained model artifact
+│   │
+│   ├── notebooks/
+│   │   └── model.ipynb             # Full ML pipeline notebook
+│   │
+│   ├── scripts/
+│   │   ├── api.py                  # FastAPI application
+│   │   ├── process_raw_data.py     # Feature extraction from raw images
+│   │   └── register_model.py       # Model versioning using W&B
+│   │
+│   └── tests/
+|       ├── test_api_health.py      # Quick API sanity check
+│       ├── test_api_latency.py     # Full latency benchmark (P50/P90/P95)
+│       ├── test_live_scan.py       # Local webcam live scanning test
+│       ├── test_memory_usage.py    # RAM usage profiling
+│       ├── test_model_size.py      # Model artifact size analysis
+│       ├── test_robustness.py      # Robustness under image perturbations
+│       └── unit_tests.py           # Pytest unit tests (24 tests)
+│
+├── Dockerfile
+└── requirements.txt
+```
+
+---
+
 ## 📡 API Reference
 
 ### Health Check
