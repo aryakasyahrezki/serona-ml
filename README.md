@@ -194,7 +194,7 @@ serona-ml/
 │
 ├── .github/
 │   └── workflows/
-│       └── ml_pipeline.yml         # CI/CD — GitHub Actions (7 jobs)
+│       └── ml_pipeline.yml         # CI/CD — GitHub Actions (8 jobs)
 │
 ├── assets/                         # Screenshots for README
 │   ├── ss_camera.png
