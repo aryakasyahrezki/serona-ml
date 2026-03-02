@@ -25,6 +25,35 @@
 
 ---
 
+## 💻 System Requirements
+
+### For Running Complete System Locally
+
+**Minimum Specifications:**
+- **CPU:** Intel i5 (4 cores) or AMD Ryzen 5 equivalent
+- **RAM:** 8 GB
+- **Storage:** 10 GB free space
+- **OS:** Windows 10/11, macOS 10.15+, or Ubuntu 20.04+
+- **Docker:** 20.10 or later
+- **Android Studio:** Otter (2025.2.1) or newer
+
+**Recommended Specifications:**
+- **CPU:** Intel i7 (6+ cores) or AMD Ryzen 7 equivalent
+- **RAM:** 16 GB (for smooth emulator performance)
+- **Storage:** 20 GB free space (SSD preferred)
+- **OS:** Windows 11, macOS 12+, or Ubuntu 22.04+
+- **Docker:** 24.0 or later
+- **Android Studio:** Otter (2025.2.1) or newer
+
+**Additional Requirements:**
+- **Internet connection** for initial setup (downloading images, dependencies)
+- **USB port** if using physical Android device
+- **Webcam** for face scanning (if using emulator)
+
+**Note:** These requirements are for running the **complete system** (ML API + Backend + Android app) simultaneously. If you only need to run individual services, requirements are lower.
+
+---
+
 ## 📱 App Screenshots
 
 | Live Scanning | Result |
