@@ -98,7 +98,7 @@ docker rm serona-ml-api
 
 ## 🔗 Running Complete Serona System
 
-> **Note:** To run the full Serona app (ML + Backend + Android), see the complete setup guide below. If you only need this ML service, the Quick Start above is sufficient.
+> **Note:** To use the app, you need all services running (ML + Backend + Android). Follow the steps below to set up the complete system.
 
 ### System Architecture
 ```
@@ -116,7 +116,7 @@ Android App (serona-android)
 
 ### Prerequisites
 - Docker & Docker Compose
-- Android Studio (for mobile app)
+- Android Studio (Otter 2025.2.1+)
 - Git
 
 ---
@@ -179,21 +179,150 @@ cd serona-android
 
 ### Step 4: Setup Port Forwarding
 
-**Android devices cannot access `localhost` directly. Run the connection script:**
+**Android devices cannot access `localhost` directly. Run the connection script every time you reconnect your physical phone, restart your device or laptop, or once your emulator has fully finished booting up:**
 
 **Windows:**
+
+Double-click the file:
 ```bash
 connect_to_docker.bat
 ```
 
 **Mac/Linux:**
-```bash
-./connect_to_docker.sh
-```
+1. Open your Terminal in this folder.
+2. Give the script permission to run (only needs to be done once):
+   ```bash
+   chmod +x connect_to_docker.sh
+   ```
+3. Run the scripts
+    ```bash
+    ./connect_to_docker.sh
+    ```
 
 This forwards device ports to your computer:
 - Port 8080 (Backend) → `http://127.0.0.1:8080`
 - Port 8000 (ML API) → `http://127.0.0.1:8000`
+
+---
+
+### Step 5: Firebase Configuration
+
+This app requires **Firebase Authentication** (Login & Register).  
+You can use the existing credentials provided in the repo, or set up your own Firebase project by following these steps:
+
+
+
+#### **1. Create a Project in Firebase Console**
+
+- Open the Firebase Console  
+- Click **Add Project**  
+- Enter your project name (e.g., `Serona-App`)  
+- Click **Create Project**
+
+
+#### **2. Register the Android App**
+
+- In the Firebase Dashboard, click the **Android icon** to add a new app.
+- Fill in the following:
+    - **Android Package Name**  
+      Open `build.gradle.kts` (Module `:app`) and find the `namespace` or `applicationId`.  
+      It must match exactly (`com.serona.app`).
+
+    - **App Nickname** (Optional)  
+       Example: `Serona Mobile`
+
+- Click **Register App**.
+
+
+#### **3. Install `google-services.json`**
+
+- Download the `google-services.json` file from Firebase.
+- In Android Studio, change the folder view from **Android → Project**.
+- Navigate to the `app/` folder.
+- **Delete** the old `google-services.json`.
+- **Paste** your new file inside the `app/` folder.
+
+> Note: You can skip the **"Add Firebase SDK"** step in the console — it is already configured in this project.
+
+
+#### **4. Enable Authentication Services**
+
+- Go to **Build → Authentication → Get Started**.
+- Open the **Sign-in method** tab.
+- Enable **Email/Password**.
+
+
+#### **5. Connect to Backend (Service Account)**
+
+- Go to **Project Settings (⚙️) → Service Accounts**.
+- Click **Generate New Private Key**.  
+  A `.json` file will be downloaded.
+
+Then:
+
+- Open your `serona-backend` folder.
+- Navigate to:
+
+```
+storage/app/
+```
+
+- Delete the old `firebase-admin.json`.
+- Paste your new key file.
+- Rename it exactly to:
+
+```
+firebase-admin.json
+```
+
+- Make sure your backend `.env` file points to this file correctly.
+
+
+#### **6. Refresh the Backend Containers**
+
+Warning: This will reset your local database.
+
+```bash
+# Stop and remove all existing data
+docker compose down -v
+
+# Rebuild and restart services
+docker compose up -d --build
+
+# Clear Laravel cache
+docker compose exec app php artisan config:clear
+docker compose exec app php artisan cache:clear
+```
+
+
+#### **7. Sync Android Studio**
+
+- Click **Sync Project with Gradle Files**
+- Go to **Build → Clean Project**
+- Then **Build → Rebuild Project/Assemble Project**
+  
+---
+
+### Step 6: Configure Camera (Emulator Only)
+
+If using Android Emulator for face scanning:
+
+1. **Device Manager** → Edit AVD
+2. **Show Advanced Settings**
+3. **Camera** → Front Camera → Webcam0
+4. **Finish**
+
+---
+
+### Step 7: Run App
+
+1. **Select Build Variant:** View → Build Variants → Set `:app` to `debug`
+2. **Run:** Click Run (▶️) or press Shift+F10
+3. **Test:**
+   - Register new account
+   - Login
+   - Open camera for face scan
+   - View results and recommendations
 
 ---
 
